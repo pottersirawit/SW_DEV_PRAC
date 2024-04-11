@@ -1,7 +1,7 @@
 const express = require("express");
 const dotenv = require("dotenv");
-// const cookieParser = require("cookie-parser");
-// const connectDB = require("./config/db");
+const cookieParser = require("cookie-parser");
+const connectDB = require("./config/db");
 
 const auth = require("./routes/auth");
 const dentists = require("./routes/dentists");
@@ -33,12 +33,11 @@ app.use(helmet());
 app.use(xss());
 app.use(limiter);
 app.use(hpp());
-// app.use(cookieParser());
+app.use(cookieParser());
 
 
-// app.use("/api/v1/auth", auth);
-// app.use("/api/v1/hospitals", hospitals);
-// app.use("/api/v1/appointments", appointments);
+app.use("/api/v1/auth", auth);
+app.use("/api/v1/dentist", dentists);
 app.use("/api/v1/bookings",bookings);
 
 // const swaggerOptions = {
