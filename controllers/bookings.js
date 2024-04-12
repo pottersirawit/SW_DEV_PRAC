@@ -33,8 +33,8 @@ exports.getBookings = async (req,res,next) => {
         const bookings = await query;
         res.status(200).json({
             success: true,
-            count: appointments.lenght,
-            data: appointments
+            count: bookings.length,
+            data: bookings
         });
     } catch(error) {
         console.log(error)
@@ -69,6 +69,7 @@ exports.getBooking = async (req,res,next) => {
 exports.addBooking = async (req,res,next) => {
     try {
         req.body.dentist = req.params.dentistId;
+        console.log(req.params.dentistId)
         
         const dentist = await Dentist.findById(req.params.dentistId);
 
