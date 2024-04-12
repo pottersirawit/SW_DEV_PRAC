@@ -5,11 +5,16 @@ const {
   addBooking,
   updateBooking,
   deleteBooking,
+  sentReminder
 } = require("../controllers/bookings");
 
 const router = express.Router({ mergeParams: true });
 
 const { protect, authorize } = require("../middleware/auth");
+
+router
+  .route("/email")
+  .get(protect,sentReminder)
 
 router
   .route("/")
@@ -20,5 +25,6 @@ router
   .get(protect, getBooking)
   .put(protect, authorize("admin", "user"), updateBooking)
   .delete(protect, authorize("admin", "user"), deleteBooking);
+
 
 module.exports = router;
