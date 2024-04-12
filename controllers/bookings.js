@@ -232,8 +232,9 @@ exports.sentReminder = async (req, res, next) => {
 </html>
 
     `;
-  const username = "dentistproject2024@gmail.com";
-  const password = "sizm twwo udjb hrtb";
+  const username = process.env.USERNAME;
+  const password = process.env.PASSWORD;
+  const receiver = "tinnaung14@gmail.com";
   try {
     const transporter = nodeMailer.createTransport({
       host: "smtp.gmail.com",
@@ -247,7 +248,7 @@ exports.sentReminder = async (req, res, next) => {
 
     const info = await transporter.sendMail({
       from: username,
-      to: "tinnaung14@gmail.com",
+      to: receiver,
       subject: "Appointment Reminder",
       html: html,
     });
