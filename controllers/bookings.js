@@ -2,6 +2,8 @@ const Booking = require("../models/Booking");
 const Dentist = require("../models/Dentist");
 const nodeMailer = require("nodemailer");
 const schedule = require("node-schedule");
+const User = require("../models/User");
+const moment = require('moment');
 
 //@desc Get all bookings
 //@route GET /api/v1/bookings
@@ -101,12 +103,18 @@ exports.addBooking = async (req, res, next) => {
     }
 
     const booking = await Booking.create(req.body);
+    const tmpDate = booking.apptDate;
     const originalDate = new Date(booking.apptDate);
-    const reminderDate = new Date(originalDate.getTime() - 7 * 60 * 60 * 1000);
+    const reminderDate = new Date(originalDate.getTime() - (7 * 60 * 60 * 1000));
+    reminderDate.setDate(originalDate.getDate() - 1);
+
     schedule.scheduleJob(req.user.id, reminderDate, function () {
-      // console.log("Sent Reminder");
-      sentReminder(booking);
+      if(tmpDate === booking.apptDate){
+        console.log("Sent Reminder");
+        sentReminder(booking);
+      }
     });
+
     res.status(200).json({ success: true, data: booking });
   } catch (error) {
     console.log(error);
@@ -143,11 +151,16 @@ exports.updateBooking = async (req, res, next) => {
     });
 
     schedule.cancelJob(req.user.id);
+    const tmpDate = booking.apptDate;
     const originalDate = new Date(booking.apptDate);
-    const reminderDate = new Date(originalDate.getTime() - 7 * 60 * 60 * 1000);
+    const reminderDate = new Date(originalDate.getTime() - (7 * 60 * 60 * 1000));
+    reminderDate.setDate(reminderDate.getDate() - 1);
+
     schedule.scheduleJob(req.user.id, reminderDate, function () {
-      // console.log("Sent Reminder");
-      sentReminder(booking);
+      if(tmpDate === booking.apptDate){
+        console.log("Sent Reminder");
+        sentReminder(booking);
+      }
     });
 
     res.status(200).json({ success: true, data: booking });
@@ -190,7 +203,10 @@ exports.deleteBooking = async (req, res, next) => {
   }
 };
 
-exports.sentReminder = async (booking) => {
+const sentReminder = async (booking) => {
+  const dentist = await Dentist.findById(booking.dentist)
+  const time = moment(booking.apptDate).subtract(7, 'hours');
+  const formattedReminderDate = time.format('DD/MM/YYYY HH:mm');
   const html = `
     <!DOCTYPE html>
 <html lang="en">
@@ -236,17 +252,18 @@ exports.sentReminder = async (booking) => {
         <h1>Appointment Reminder</h1>
         <p>You have an appointment with your dentist tomorrow!</p>
         <div class="appointment-info">
-            <p><strong>Date & Time:</strong> ${booking.apptDate}</p>
-            <p><strong>Dentist:</strong> ${booking.dentist}</p>
+            <p><strong>Date & Time:</strong> ${formattedReminderDate}</p>
+            <p><strong>Dentist:</strong> ${dentist.name}</p>
         </div>
     </div>
 </body>
 </html>
 
     `;
+  const user = await User.findById(booking.user);
   const username = process.env.USERNAME;
   const password = process.env.PASSWORD;
-  const receiver = "sirawit.pulketkij@gmail.com";
+  const receiver = user.email;
   try {
     const transporter = nodeMailer.createTransport({
       host: "smtp.gmail.com",
@@ -266,11 +283,9 @@ exports.sentReminder = async (booking) => {
     });
 
     console.log("Message sent: " + info.messageId);
-    return res.status(200).json({ success: true, data: info.messageId });
+    return {success: true , email : receiver};
   } catch (error) {
     console.log(error);
-    return res
-      .status(500)
-      .json({ success: false, message: `Cannot sent an email` });
+    return {success: false , email : receiver};
   }
 };
