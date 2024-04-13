@@ -1,6 +1,7 @@
 const Booking = require("../models/Booking");
 const Dentist = require("../models/Dentist");
 const nodeMailer = require("nodemailer");
+const schedule = require("node-schedule");
 
 //@desc Get all bookings
 //@route GET /api/v1/bookings
@@ -100,6 +101,12 @@ exports.addBooking = async (req, res, next) => {
     }
 
     const booking = await Booking.create(req.body);
+    const originalDate = new Date(booking.apptDate);
+    const reminderDate = new Date(originalDate.getTime() - 7 * 60 * 60 * 1000);
+    schedule.scheduleJob(req.user.id, reminderDate, function () {
+      // console.log("Sent Reminder");
+      sentReminder(booking);
+    });
     res.status(200).json({ success: true, data: booking });
   } catch (error) {
     console.log(error);
@@ -135,6 +142,14 @@ exports.updateBooking = async (req, res, next) => {
       runValidators: true,
     });
 
+    schedule.cancelJob(req.user.id);
+    const originalDate = new Date(booking.apptDate);
+    const reminderDate = new Date(originalDate.getTime() - 7 * 60 * 60 * 1000);
+    schedule.scheduleJob(req.user.id, reminderDate, function () {
+      // console.log("Sent Reminder");
+      sentReminder(booking);
+    });
+
     res.status(200).json({ success: true, data: booking });
   } catch (error) {
     console.log(error);
@@ -165,7 +180,7 @@ exports.deleteBooking = async (req, res, next) => {
     }
 
     await booking.deleteOne();
-
+    schedule.cancelJob(req.user.id);
     res.status(200).json({ success: true, data: {} });
   } catch (error) {
     console.log(error);
@@ -175,10 +190,7 @@ exports.deleteBooking = async (req, res, next) => {
   }
 };
 
-//@desc Sent a reminder email
-//@route GET /api/v1/bookings/email
-//@access Public
-exports.sentReminder = async (req, res, next) => {
+exports.sentReminder = async (booking) => {
   const html = `
     <!DOCTYPE html>
 <html lang="en">
@@ -224,8 +236,8 @@ exports.sentReminder = async (req, res, next) => {
         <h1>Appointment Reminder</h1>
         <p>You have an appointment with your dentist tomorrow!</p>
         <div class="appointment-info">
-            <p><strong>Date & Time:</strong> 11/11/2024 16:00</p>
-            <p><strong>Dentist:</strong> Johny Suh</p>
+            <p><strong>Date & Time:</strong> ${booking.apptDate}</p>
+            <p><strong>Dentist:</strong> ${booking.dentist}</p>
         </div>
     </div>
 </body>
@@ -234,7 +246,7 @@ exports.sentReminder = async (req, res, next) => {
     `;
   const username = process.env.USERNAME;
   const password = process.env.PASSWORD;
-  const receiver = "tinnaung14@gmail.com";
+  const receiver = "sirawit.pulketkij@gmail.com";
   try {
     const transporter = nodeMailer.createTransport({
       host: "smtp.gmail.com",
