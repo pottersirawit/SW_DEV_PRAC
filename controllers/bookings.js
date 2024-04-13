@@ -90,7 +90,12 @@ exports.addBooking = async (req, res, next) => {
         message: `There is no dentist with the id of ${req.params.dentistId}`,
       });
     }
-
+    if(req.body.user !== req.user.id){
+      return res.status(401).json({
+        success: false,
+        message: `User ${req.body.user} is not authorized to make this booking`,
+      })
+    }
     req.body.user = req.user.id;
 
     const existedBookings = await Booking.find({ user: req.user.id });
