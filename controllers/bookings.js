@@ -111,7 +111,7 @@ exports.addBooking = async (req, res, next) => {
     const tmpDate = booking.apptDate;
     const originalDate = new Date(booking.apptDate);
     const reminderDate = new Date(originalDate.getTime() - (7 * 60 * 60 * 1000));
-    reminderDate.setDate(originalDate.getDate() - 1);
+    reminderDate.setDate(reminderDate.getDate() - 1);
 
     schedule.scheduleJob(req.user.id, reminderDate, function () {
       if(tmpDate === booking.apptDate){
