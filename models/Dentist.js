@@ -40,4 +40,17 @@ DentistSchema.virtual("bookings", {
   justOne: false,
 });
 
+DentistSchema.pre('deleteOne',{document: true, query: false}, async function(next){
+  console.log(`Bookings being removed from dentist ${this._id}`);
+  await this,model('Booking').deleteMany({dentist: this._id});
+  next();
+})
+
+DentistSchema.virtual('bookings',{
+  ref: 'Booking',
+  localField: '_id',
+  foreignField: 'dentist',
+  justOne: false
+})
+
 module.exports = mongoose.model("Dentist", DentistSchema);
